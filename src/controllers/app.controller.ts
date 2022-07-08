@@ -7,8 +7,10 @@ export default () => ({
     if (req.cookies?._app_2_Session !== undefined) {
       const _app_2_Session = req.cookies._app_2_Session;
       const session: any = await db.collection('app_2_session').doc(_app_2_Session).get();
-      if (session.data().role !== 'guest') {
-        return res.redirect(`${process.env.APP_URL}/me`);
+      if (session.exists) {
+        if (session.data().role !== 'guest') {
+          return res.redirect(`${process.env.APP_URL}/me`);
+        }
       }
     }
     return res.render("home", {
