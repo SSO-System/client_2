@@ -5,13 +5,13 @@ const oneDay = 24 * 60 * 60 * 1000;
 // If user authenticated -> allow
 // Otherwise -> redirect to homepage 
 export const authenticate = async (req, res, next) => {
-    const _app_session = req.cookies._app_session;
+    const _app_2_Session = req.cookies._app_2_Session;
     
-    if (_app_session === undefined) {
+    if (_app_2_Session === undefined) {
         return res.redirect(`${process.env.APP_URL}`);
     }
     else {
-        const session: any = await db.collection('app_2_session').doc(_app_session).get();
+        const session: any = await db.collection('app_2_session').doc(_app_2_Session).get();
         if (session.exists) {
             const role: string = session.data().role;
             
@@ -20,7 +20,7 @@ export const authenticate = async (req, res, next) => {
             }           
             
         } else {
-            req.cookies.set("_app_session", "", {
+            req.cookies.set("_app_2_Session", "", {
                 httpOnly: true,
                 maxAge: 0
             })
