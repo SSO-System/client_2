@@ -8,7 +8,7 @@ import { check_session } from "./middlewares/session.middleware";
 
 dotenv.config({ path: path.resolve('.env')});
 
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3006;
 const app = express();
 
 // Seting 
