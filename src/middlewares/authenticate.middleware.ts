@@ -20,7 +20,7 @@ export const authenticate = async (req, res, next) => {
             }           
             
         } else {
-            req.cookies.set("_app_2_Session", "", {
+            res.cookie("_app_2_Session", "", {
                 httpOnly: true,
                 maxAge: 0
             })
