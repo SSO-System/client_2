@@ -125,4 +125,39 @@ export default () => ({
 
     return res.redirect(`${process.env.APP_URL}`)  
   },
+  check_session: async (req, res) => {
+    try {
+      const _app_2_session = req.cookies._app_2_session;
+      const session: any = await db.collection('app_2_session').doc(_app_2_session).get();
+
+      if (!session.exists) {
+        res.status(200).send({
+          active: false,
+        });
+      } else {
+        const access_token = session.data().accessToken;
+        if (!access_token) {
+          res.status(200).send({
+            active: false,
+          });
+        } else {
+          const result = await fetch(`${process.env.AUTH_ISSUER}/token/introspection`, {
+                method: "POST",
+                body: new URLSearchParams({
+                  client_id: `${process.env.CLIENT_ID}`,
+                  client_secret: `${process.env.CLIENT_SECRET}`,
+                  token: access_token
+                })
+              });
+          const data = await result.json();
+          res.status(200).send({
+            active: data.active ? data.active : false,
+          });
+        };
+      };
+
+    } catch (e: any) {
+      console.log(e.message);
+    }
+  },
 });
