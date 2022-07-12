@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { db } from '../db/connection';
 import { v4 as uuidv4 } from 'uuid';
+import fetch from 'node-fetch';
 
 export default () => ({
   homePage: async (req, res) => {
-    if (req.cookies?._app_2_Session !== undefined) {
-      const _app_2_Session = req.cookies._app_2_Session;
-      const session: any = await db.collection('app_2_session').doc(_app_2_Session).get();
+    if (req.cookies?._app_2_session !== undefined) {
+      const _app_2_session = req.cookies._app_2_session;
+      const session: any = await db.collection('app_2_session').doc(_app_2_session).get();
       if (session.exists) {
         if (session.data().role !== 'guest') {
           return res.redirect(`${process.env.APP_URL}/me`);
@@ -40,7 +41,7 @@ export default () => ({
         })
       }
       try {
-        const session = req.cookies._app_2_Session;
+        const session = req.cookies._app_2_session;
         const data: any = await db.collection('app_2_session').doc(session).get();
 
         const result: any = await axios.post(`${process.env.AUTH_ISSUER}/token`, new URLSearchParams({
@@ -50,7 +51,7 @@ export default () => ({
           code: req.query.code,
           redirect_uri: process.env.APP_URL + "/login_callback",
           code_verifier: data.data().codeVerifier,
-          scope: 'openid profile offline_access',
+          scope: 'openid profile',
           code_challenge_method: 'S256',
         }));
 
@@ -61,7 +62,6 @@ export default () => ({
         await db.collection("app_2_session").doc(session).update({
           accessToken: result.data.access_token,
           idToken: result.data.id_token,
-          refreshToken: result.data.refresh_token,
           role: 'user',
           username: userInfo.data.username 
         })
@@ -82,9 +82,9 @@ export default () => ({
   },
   
   user_info: async (req, res) => {
-    const _app_2_Session = req.cookies._app_2_Session;
+    const _app_2_session = req.cookies._app_2_session;
 
-    const session: any = await db.collection("app_2_session").doc(_app_2_Session).get();
+    const session: any = await db.collection("app_2_session").doc(_app_2_session).get();
     const username: string = session.data().username;
 
     const userInfo: any = await db.collection("app_2_account").where("username", "==", username).get();
@@ -110,14 +110,14 @@ export default () => ({
 
   logout_callback: async (req, res) => {
     const oneDay = 24 * 60 * 60 * 1000;
-    const _app_2_Session = req.cookies._app_2_Session;
+    const _app_2_session = req.cookies._app_2_session;
     const new_session = uuidv4();
-    res.cookie("_app_2_Session", new_session, {
+    res.cookie("_app_2_session", new_session, {
       httpOnly: true,
       maxAge: oneDay,
     });
 
-    await db.collection('app_2_session').doc(_app_2_Session).delete();
+    await db.collection('app_2_session').doc(_app_2_session).delete();
     await db.collection('app_2_session').doc(new_session).set({
       expiredAt: new Date(+ new Date() + oneDay),
       role: 'guest',

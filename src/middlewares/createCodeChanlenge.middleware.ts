@@ -2,12 +2,12 @@ import { create_pkce } from '../actions/create_pkce';
 import { db } from '../db/connection';
 
 export const createCodeChallenge = async (req, res, next) => {
-    const _app_2_Session = res.locals._app_2_Session;
+    const _app_2_session = res.locals._app_2_session;
 
-    const session: any = await db.collection("app_2_session").doc(_app_2_Session).get();
+    const session: any = await db.collection("app_2_session").doc(_app_2_session).get();
 
     if (session.data().codeChallenge === undefined) { 
-        const codeChallenge = await create_pkce(_app_2_Session);
+        const codeChallenge = await create_pkce(_app_2_session);
         res.locals.codeChallenge = codeChallenge;
     } else {
         res.locals.codeChallenge = session.data().codeChallenge;
