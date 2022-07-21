@@ -7,79 +7,71 @@ const oneDay = 24 * 60 * 60 * 1000;
 // If session expired -> Regenerate -> Next
 // req.session contains all data about the session (ex: role, username, access_token, id_token, code_challenge, code_verifier,...)
 export const session = async (req, res, next) => {
-    const _app_2_session = req.cookies?._app_2_session;
+    try {
+        const _app_2_session = req.cookies?._app_2_session;
 
-    // No session
-    if (_app_2_session === undefined) {
-        const new_session = uuidv4();
-        const expiredAt = new Date(+ new Date() + oneDay);
-        await res.cookie("_app_2_session", new_session, {
-            httpOnly: true,
-            maxAge: oneDay,
-        })
-        await db.collection('app_2_session').doc(new_session).set({
-            expiredAt,
-            role: 'guest',
-        });
-        req.sessionID = new_session;
-        req.session = {
-            role: 'guest'
-        }
-    } else {
-        const session = await db.collection('app_2_session').doc(_app_2_session).get();
-
-        // Have session local but doesn't exist on DB
-        if (!session.exists) {
+        // No session
+        if (_app_2_session === undefined) {
             const new_session = uuidv4();
             const expiredAt = new Date(+ new Date() + oneDay);
             await res.cookie("_app_2_session", new_session, {
                 httpOnly: true,
                 maxAge: oneDay,
             })
-            await db.collection('app_2_session').doc(new_session).set({
-                expiredAt,
-                role: 'guest',
-            });
+
+            await db.query('INSERT INTO client_2_session(session_id, expired_at, role) VALUES ($1, $2, $3)', [new_session, expiredAt, 'guest'])
             req.sessionID = new_session;
             req.session = {
                 role: 'guest'
             }
         } else {
-            const session_data: any = session.data();
-            const expiredAt = new Date(+ new Date() + oneDay);
+            const session = await db.query('SELECT * FROM client_2_session WHERE session_id = $1', [_app_2_session]);
 
-            // Session expired
-            if (+new Date(session_data.expiredAt) < +new Date()) {
+            // Have session local but doesn't exist on DB
+            if (session.rows.length === 0) {
                 const new_session = uuidv4();
-
+                const expiredAt = new Date(+ new Date() + oneDay);
                 await res.cookie("_app_2_session", new_session, {
                     httpOnly: true,
                     maxAge: oneDay,
                 })
-
-                await db.collection('app_2_session').doc(_app_2_session).delete();
-                await db.collection('app_2_session').doc(new_session).set({
-                    expiredAt,
-                    role: 'guest',
-                })
+                await db.query('INSERT INTO client_2_session (session_id, expired_at, role) VALUES ($1, $2, $3)', [new_session, expiredAt, 'guest']);
                 req.sessionID = new_session;
                 req.session = {
                     role: 'guest'
                 }
             } else {
-                // Renew expired
-                await res.cookie("_app_2_session", _app_2_session, {
-                    httpOnly: true,
-                    maxAge: oneDay 
-                });
+                const session_data: any = session.rows[0];
+                const expiredAt = new Date(+ new Date() + oneDay);
 
-                await db.collection('app_2_session').doc(_app_2_session).update({
-                    expiredAt
-                });
-                req.sessionID = _app_2_session;
-                req.session = session_data;
+                // Session expired
+                if (+new Date(session_data.expired_at) < +new Date()) {
+                    const new_session = uuidv4();
+
+                    await res.cookie("_app_2_session", new_session, {
+                        httpOnly: true,
+                        maxAge: oneDay,
+                    })
+                    await db.query('DELETE FROM client_2_session WHERE session_id = $1', [_app_2_session]);
+                    await db.query('INSERT INTO client_2_session (session_id, expired_at, role) VALUES ($1, $2, $3)', [new_session, expiredAt, 'guest']);
+                    req.sessionID = new_session;
+                    req.session = {
+                        role: 'guest'
+                    }
+                } else {
+                    // Renew expired
+                    await res.cookie("_app_2_session", _app_2_session, {
+                        httpOnly: true,
+                        maxAge: oneDay 
+                    });
+                    await db.query('UPDATE client_2_session SET expired_at = $1 WHERE session_id = $2', [expiredAt, _app_2_session]);
+                    req.sessionID = _app_2_session;
+                    req.session = session_data;
+                }
             }
         }
+        next();
+    } catch (e: any) {
+        console.log(e.message);
     }
-    next();
 }

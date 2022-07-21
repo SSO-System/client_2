@@ -3,12 +3,12 @@
   <%- include('components/head'); -%>
   <body class="app" style="text-align: center;">
         <h1><%= title %></h1>
+        <!-- <iframe src='<%= authServerUrl %>/check_session' width="250px" height="250px"> </iframe> -->
         <div>          
           <img src="https://firebasestorage.googleapis.com/v0/b/oauth2-c28ca.appspot.com/o/welcome_2.png?alt=media&token=a22f2182-0a2d-4a40-890c-2abebf455bcd" width="30%" height="auto" />
         </div>
         <form action="<%= authServerUrl %>/auth" method="post">
             <input hidden required name="client_id" value="<%= clientId %>" />
-            <input hidden required name="resource" value="<%= appUrl %>/login_callback"/>
             <input hidden required name="response_type" value="code" />
             <input hidden required name="redirect_uri" value="<%= appUrl %>/login_callback" />
             <input hidden required name="scope" value="openid profile email" />
